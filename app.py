@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
-import re
+import re  # still imported if you need to extend functionality later
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
-from qdrant_client.models import SearchRequest  # for reference, not used directly
+from qdrant_client.models import SearchRequest  # For reference, if needed
 
-# Load Qdrant secrets from Streamlit
+# Load Qdrant secrets from Streamlit secrets
 QDRANT_URL = st.secrets["QDRANT_URL"]
 QDRANT_API_KEY = st.secrets["QDRANT_API_KEY"]
 
@@ -17,29 +17,26 @@ def get_qdrant_client():
 def load_embedder():
     return SentenceTransformer("all-mpnet-base-v2")
 
-# Initialize model and Qdrant client
+# Initialize embedder and Qdrant client
 embedder = load_embedder()
 q_client = get_qdrant_client()
 
-def extract_product_name(text: str) -> str:
-    """
-    A simple heuristic using regex to extract a product name.
-    This regex looks for sequences of two or more capitalized words.
-    """
-    pattern = re.compile(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b')
-    match = pattern.search(text)
-    return match.group(0) if match else "Unknown Product"
-
+st.set_page_config(page_title="Amazon Reviews Search", layout="wide")
 st.title("Amazon Reviews Search")
+
+st.markdown("""
+This app performs a vector search on preprocessed Amazon reviews stored in Qdrant.
+Enter a query below to find similar reviews and see their sentiment distribution.
+""")
 
 query = st.text_input("Enter your search query:", "great budget phone")
 
 if st.button("Search"):
     if query.strip():
-        # Generate embedding for the query using MPNet
+        # Generate query embedding using MPNet
         query_vector = embedder.encode([query])[0].tolist()
 
-        # Perform similarity search in Qdrant (top 10 results)
+        # Perform similarity search in Qdrant (retrieve top 10 results)
         results = q_client.search(
             collection_name="amazon_reviews",
             query_vector=query_vector,
@@ -47,32 +44,25 @@ if st.button("Search"):
             with_payload=True
         )
 
-        # Extract results into a DataFrame for visualization
+        # Extract results into a DataFrame for display
         data = []
         for hit in results:
             payload = hit.payload
-            text = payload.get("text", "N/A")
-            sentiment = payload.get("sentiment", "N/A")
-            category = payload.get("category", "N/A")
-            product = extract_product_name(text)
             data.append({
-                "text": text,
-                "sentiment": sentiment,
-                "category": category,
-                "product": product
+                "Review Text": payload.get("text", "N/A"),
+                "Sentiment": payload.get("sentiment", "N/A"),
+                "Category": payload.get("category", "N/A")
             })
         
         df_results = pd.DataFrame(data)
+
+        st.markdown("### Search Results")
+        st.dataframe(df_results, use_container_width=True)
         
-        st.write("### Search Results")
-        st.dataframe(df_results)
-        
-        # Display a bar chart for sentiment distribution
-        sentiment_counts = df_results["sentiment"].value_counts()
-        st.bar_chart(sentiment_counts)
-        
-        # Optionally, display product name guesses with the associated text
-        st.write("### Guessed Product Names")
-        st.dataframe(df_results[["product", "text"]])
+        # Display a bar chart for sentiment distribution if available
+        if not df_results["Sentiment"].empty:
+            sentiment_counts = df_results["Sentiment"].value_counts()
+            st.markdown("### Sentiment Distribution")
+            st.bar_chart(sentiment_counts)
     else:
-        st.warning("Please enter a query.")
+        st.warning("Please enter a search query.")
