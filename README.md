@@ -143,10 +143,6 @@ A development container configuration is provided for consistent development env
 - Add support for multi-language reviews
 - Extend with aspect-based sentiment analysis
 
-## License
-
-Free and public access data, no license requirements
-
 ## Acknowledgments
 
 - This project uses Sentence Transformers by UKPLab
