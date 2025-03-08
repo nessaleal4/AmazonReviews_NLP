@@ -4,16 +4,15 @@ import requests
 from io import BytesIO
 import plotly.express as px
 
-# Set up the page
+# Set the page configuration
 st.set_page_config(page_title="Sentiment Analytics", layout="wide")
 
 st.title("Sentiment Analytics by Category")
 st.markdown("""
-This dashboard loads preprocessed CSV files (with sentiment columns) from Google Drive and 
-visualizes sentiment distribution across review categories.
+This dashboard displays sentiment distribution across review categories based on preprocessed CSV data stored on Google Drive.
 """)
 
-# Dictionary of categories to their Google Drive File IDs
+# Dictionary of categories to Google Drive File IDs
 DRIVE_FILE_IDS = {
     "Beauty_and_Personal_Care": "1ZhGvPq2xvjljm530XOHxYlKN1Ssv8mkA",
     "Books": "1F-ypoWmen8wlJb8SZ9cO9quHSqY6Ji8J",
@@ -24,24 +23,27 @@ DRIVE_FILE_IDS = {
 @st.cache_data
 def load_csv_from_drive(file_id: str) -> pd.DataFrame:
     """
-    Download a CSV file from Google Drive using its file ID and return a DataFrame.
+    Downloads a CSV file from Google Drive using its file ID and returns a DataFrame.
+    Uses the Python engine with on_bad_lines="skip" to handle tokenizing errors.
     """
     download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
     response = requests.get(download_url)
-    response.raise_for_status()  # Raise an HTTPError if the download fails
-    return pd.read_csv(BytesIO(response.content))
+    response.raise_for_status()
+    # Use the Python engine and skip bad lines
+    df = pd.read_csv(BytesIO(response.content), engine="python", on_bad_lines="skip")
+    return df
 
 @st.cache_data
 def load_all_categories() -> pd.DataFrame:
     """
-    Load all category CSVs from Google Drive, merge them into one DataFrame, and 
-    return the combined data with a 'category' column.
+    Loads CSV files for all categories from Google Drive,
+    adds a 'category' column if missing, and concatenates them into one DataFrame.
     """
     all_dfs = []
     for category, file_id in DRIVE_FILE_IDS.items():
         try:
             df = load_csv_from_drive(file_id)
-            # Ensure we have a 'category' column in case the CSV doesn't have one
+            # Ensure there's a category column
             if "category" not in df.columns:
                 df["category"] = category
             all_dfs.append(df)
@@ -52,24 +54,20 @@ def load_all_categories() -> pd.DataFrame:
     else:
         return pd.DataFrame()
 
-# Load all category data
-df = load_all_categories()
+# Load all category data from Drive
+df_all = load_all_categories()
 
-if df.empty:
+if df_all.empty:
     st.warning("No data available. Please ensure your Google Drive links are correct.")
 else:
-    # Check that 'sentiment' column exists
-    if "sentiment" not in df.columns:
-        st.error("No 'sentiment' column found in the merged data.")
+    st.markdown("### Overall Sentiment Distribution")
+    if "sentiment" not in df_all.columns:
+        st.error("The data does not include a 'sentiment' column.")
     else:
-        # Convert category column if it's missing or inconsistent
-        if "category" not in df.columns:
-            df["category"] = "Unknown"
-
-        # Group data by Category and Sentiment
-        df_grouped = df.groupby(["category", "sentiment"]).size().reset_index(name="Count")
-
-        # Create a grouped bar chart using Plotly Express
+        # Group by category and sentiment
+        df_grouped = df_all.groupby(["category", "sentiment"]).size().reset_index(name="Count")
+        
+        # Create a grouped bar chart with Plotly Express
         fig = px.bar(
             df_grouped,
             x="category",
@@ -81,7 +79,6 @@ else:
         )
         fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
         st.plotly_chart(fig, use_container_width=True)
-
-        # Display a sample of the raw data
+        
         st.markdown("### Detailed Data (Sample)")
-        st.dataframe(df.head(50), use_container_width=True)
+        st.dataframe(df_grouped, use_container_width=True)
