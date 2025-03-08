@@ -3,3 +3,5 @@ qdrant-client
 sentence-transformers
 pandas
 plotly
+requests
+beautifulsoup4
