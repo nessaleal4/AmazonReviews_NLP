@@ -32,7 +32,7 @@ Welcome to the Amazon Reviews Search app.
 Enter a search query below to retrieve similar reviews and view their sentiment distribution.
 """)
 
-query = st.text_input("Enter your search query:", "great budget phone")
+query = st.text_input("Enter your search query:", "Harry Potter")
 
 if st.button("Search"):
     if query.strip():
