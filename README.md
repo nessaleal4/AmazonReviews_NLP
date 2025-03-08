@@ -145,7 +145,7 @@ A development container configuration is provided for consistent development env
 
 ## License
 
-[Add your license information here]
+Free and public access data, no license requirements
 
 ## Acknowledgments
 
