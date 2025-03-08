@@ -142,13 +142,13 @@ with col1:
     </div>
     """, unsafe_allow_html=True)
 with col2:
-    st.title("Amazon Reviews Search")
+    st.title("Product Sentiment Search - Amazon Reviews")
 
 # More elegant app description
 st.markdown("""
 <div class="card">
     <p style="font-size: 1.1rem; line-height: 1.6;">
-        Welcome to the <b>Amazon Reviews Search</b> platform. This tool leverages natural language processing and 
+        Welcome to the <b>Product Sentiment Search - Amazon Reviews</b> platform. This tool leverages natural language processing and 
         semantic search to help you explore customer sentiments about products. Enter a search query 
         below to discover relevant reviews and analyze their sentiment distribution.
     </p>
