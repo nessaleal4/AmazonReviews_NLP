@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
-import spacy
+import re
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
-from qdrant_client.models import SearchRequest  # not used directly, but available if needed
+from qdrant_client.models import SearchRequest  # for reference, not used directly
 
 # Load Qdrant secrets from Streamlit
 QDRANT_URL = st.secrets["QDRANT_URL"]
@@ -17,23 +17,18 @@ def get_qdrant_client():
 def load_embedder():
     return SentenceTransformer("all-mpnet-base-v2")
 
-@st.cache_resource
-def load_spacy():
-    return spacy.load("en_core_web_sm")
-
-# Initialize models
+# Initialize model and Qdrant client
 embedder = load_embedder()
-nlp = load_spacy()
 q_client = get_qdrant_client()
 
-def extract_product_name(text):
+def extract_product_name(text: str) -> str:
     """
-    Attempts to extract a product name from the review text using spaCy NER.
-    Looks for entities labeled as 'PRODUCT' or 'ORG' (as a heuristic).
+    A simple heuristic using regex to extract a product name.
+    This regex looks for sequences of two or more capitalized words.
     """
-    doc = nlp(text)
-    candidates = [ent.text for ent in doc.ents if ent.label_ in ("PRODUCT", "ORG")]
-    return candidates[0] if candidates else "Unknown Product"
+    pattern = re.compile(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b')
+    match = pattern.search(text)
+    return match.group(0) if match else "Unknown Product"
 
 st.title("Amazon Reviews Search")
 
@@ -52,7 +47,7 @@ if st.button("Search"):
             with_payload=True
         )
 
-        # Extract search results into a DataFrame for visualization
+        # Extract results into a DataFrame for visualization
         data = []
         for hit in results:
             payload = hit.payload
@@ -76,7 +71,7 @@ if st.button("Search"):
         sentiment_counts = df_results["sentiment"].value_counts()
         st.bar_chart(sentiment_counts)
         
-        # Optionally, display the guessed product names with the associated text
+        # Optionally, display product name guesses with the associated text
         st.write("### Guessed Product Names")
         st.dataframe(df_results[["product", "text"]])
     else:
