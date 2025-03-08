@@ -1,53 +1,70 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from qdrant_client import QdrantClient
 
-# Set page configuration
+# Set the page config (optional on sub-pages; best to have it in the main app)
 st.set_page_config(page_title="Sentiment Analytics", layout="wide")
+
+# Load Qdrant secrets from Streamlit secrets
+QDRANT_URL = st.secrets["QDRANT_URL"]
+QDRANT_API_KEY = st.secrets["QDRANT_API_KEY"]
+
+@st.cache_resource
+def get_qdrant_client():
+    return QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+
+q_client = get_qdrant_client()
+
+@st.cache_data
+def load_data_from_qdrant(sample_limit: int = 1000) -> pd.DataFrame:
+    """
+    Fetches a sample of points from the Qdrant collection and returns a DataFrame
+    containing 'category' and 'sentiment' from the payload.
+    """
+    # Use the scroll method to fetch a batch of points
+    scroll_response = q_client.scroll(
+        collection_name="amazon_reviews",
+        limit=sample_limit
+    )
+    points = scroll_response.result.points
+    data = []
+    for point in points:
+        payload = point.payload
+        data.append({
+            "Category": payload.get("category", "Unknown"),
+            "Sentiment": payload.get("sentiment", "Unknown")
+        })
+    return pd.DataFrame(data)
 
 st.title("Sentiment Analytics by Category")
 st.markdown("""
-This page displays overall and category-specific sentiment analytics derived from our preprocessed Amazon reviews dataset.
+This dashboard displays sentiment distribution across review categories based on data stored in Qdrant.
 """)
 
-@st.cache_data
-def load_data():
-    # Adjust this path to match where your preprocessed data is stored.
-    # It could be a CSV or Parquet file.
-    try:
-        # For example, if you saved data as CSV:
-        df = pd.read_csv("data/processed/all_reviews.csv")
-        # Alternatively, if using Parquet:
-        # df = pd.read_parquet("data/processed/all_reviews.parquet")
-    except Exception as e:
-        st.error(f"Error loading data: {e}")
-        df = pd.DataFrame()
-    return df
+# Load a sample of the data from Qdrant
+df = load_data_from_qdrant(1000)
 
-df = load_data()
-
-if not df.empty:
-    st.markdown("### Overall Sentiment Distribution")
-    sentiment_counts = df["sentiment"].value_counts().reset_index()
-    sentiment_counts.columns = ["Sentiment", "Count"]
-
-    # Create a pie chart for overall sentiment distribution
-    fig_overall = px.pie(sentiment_counts, values="Count", names="Sentiment",
-                         title="Overall Sentiment Distribution")
-    st.plotly_chart(fig_overall, use_container_width=True)
-
-    st.markdown("### Sentiment Distribution by Category")
-    # Group data by category and sentiment
-    if "category" in df.columns:
-        df_grouped = df.groupby(["category", "sentiment"]).size().reset_index(name="Count")
-        fig_category = px.bar(df_grouped, x="category", y="Count", color="sentiment", barmode="group",
-                              title="Sentiment Distribution by Category",
-                              labels={"category": "Category", "Count": "Number of Reviews"})
-        st.plotly_chart(fig_category, use_container_width=True)
-    else:
-        st.warning("The data does not include category information.")
-
-    st.markdown("### Detailed Data")
-    st.dataframe(df)
+if df.empty:
+    st.write("No data available. Please ensure your Qdrant collection is populated.")
 else:
-    st.write("No data available. Please ensure the preprocessed data file exists.")
+    # Group by Category and Sentiment
+    df_grouped = df.groupby(["Category", "Sentiment"]).size().reset_index(name="Count")
+    
+    # Create a grouped bar chart using Plotly Express
+    fig = px.bar(
+        df_grouped,
+        x="Category",
+        y="Count",
+        color="Sentiment",
+        barmode="group",
+        title="Sentiment Distribution by Category",
+        labels={"Count": "Number of Reviews"}
+    )
+    fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
+    
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Optionally, show raw grouped data
+    st.markdown("### Detailed Data")
+    st.dataframe(df_grouped)
