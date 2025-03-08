@@ -92,7 +92,7 @@ streamlit run app.py
 
 ### Main Search Interface
 
-1. Enter a natural language query like "great budget phone" in the search box
+1. Enter a natural language query like "Olay body wash" in the search box
 2. Click the "Search" button
 3. Review the results table showing matching reviews
 4. Examine the sentiment distribution chart
