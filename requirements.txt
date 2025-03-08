@@ -2,3 +2,4 @@ streamlit
 qdrant-client
 sentence-transformers
 pandas
+plotly
