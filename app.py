@@ -48,7 +48,7 @@ st.markdown("""
     
     /* Button styling */
     .stButton > button {
-        background-color: #FF9900;
+        background-color: #8B0000;
         color: white;
         font-weight: 600;
         border: none;
@@ -58,7 +58,7 @@ st.markdown("""
     }
     
     .stButton > button:hover {
-        background-color: #E88A00;
+        background-color: #6B0000;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     
@@ -112,7 +112,7 @@ st.markdown("""
 st.sidebar.markdown("""
 <div style="text-align: center; padding: 1rem 0;">
     <h2 style="color: #232F3E;">Amazon Reviews</h2>
-    <p style="font-size: 1.1rem; color: #FF9900; font-weight: 600;">Product Search & Analysis</p>
+    <p style="font-size: 1.1rem; color: #8B0000; font-weight: 600;">Product Search & Analysis</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -135,10 +135,10 @@ q_client = get_qdrant_client()
 # Create a visually appealing header with icon and title
 col1, col2 = st.columns([1, 6])
 with col1:
-    # Amazon-style icon
+    # Elegant icon
     st.markdown("""
     <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
-        <span style="font-size: 3.5rem; color: #FF9900;">📊</span>
+        <span style="font-size: 3.5rem; color: #8B0000;">📊</span>
     </div>
     """, unsafe_allow_html=True)
 with col2:
@@ -158,17 +158,8 @@ st.markdown("""
 # Enhanced search input with example queries
 st.markdown("<h3>Search for Product Reviews</h3>", unsafe_allow_html=True)
 
-# Example queries that users can click on
-example_queries = ["great budget phone", "disappointing battery life", "comfortable headphones", "durable kitchen appliance"]
-cols = st.columns(len(example_queries))
-clicked_query = None
-
-for i, query_example in enumerate(example_queries):
-    with cols[i]:
-        if st.button(f"'{query_example}'", key=f"example_{i}"):
-            clicked_query = query_example
-
-query = st.text_input("Enter your search query:", clicked_query or "Harry Potter", 
+# Simple elegant search input
+query = st.text_input("Enter your search query:", "Harry Potter", 
                       help="Try searching for product features, specific use cases, or quality descriptors")
 
 search_col1, search_col2 = st.columns([1, 6])
@@ -210,7 +201,7 @@ if search_button:
                 # Results header with search query highlight
                 st.markdown(f"""
                 <div class="card">
-                    <h3>Search Results for: <span style="color: #FF9900;">"{query}"</span></h3>
+                    <h3>Search Results for: <span style="color: #8B0000;">"{query}"</span></h3>
                     <p>Showing {len(results)} most relevant reviews based on semantic similarity.</p>
                 </div>
                 """, unsafe_allow_html=True)
@@ -228,8 +219,8 @@ if search_button:
                             sentiment_counts = df_results["Sentiment"].value_counts().reset_index()
                             sentiment_counts.columns = ["Sentiment", "Count"]
                             
-                            # Custom color palette
-                            colors = {"POSITIVE": "#2ecc71", "NEGATIVE": "#e74c3c", "NEUTRAL": "#3498db"}
+                            # Elegant color palette
+                            colors = {"POSITIVE": "#2ecc71", "NEGATIVE": "#8B0000", "NEUTRAL": "#3498db"}
                             
                             fig = px.bar(
                                 sentiment_counts, 
@@ -316,7 +307,7 @@ if search_button:
                     # Download option for results
                     csv = df_results[["Review Text", "Sentiment", "Category"]].to_csv(index=False)
                     b64 = base64.b64encode(csv.encode()).decode()
-                    href = f'<div style="text-align: right;"><a href="data:file/csv;base64,{b64}" download="amazon_reviews_results.csv" style="color: #FF9900; text-decoration: none; font-weight: 600;">📥 Download Results</a></div>'
+                    href = f'<div style="text-align: right;"><a href="data:file/csv;base64,{b64}" download="amazon_reviews_results.csv" style="color: #8B0000; text-decoration: none; font-weight: 600;">📥 Download Results</a></div>'
                     st.markdown(href, unsafe_allow_html=True)
             else:
                 st.warning("No matching reviews found for your query. Try a different search term.")
