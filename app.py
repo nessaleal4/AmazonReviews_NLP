@@ -159,7 +159,7 @@ st.markdown("""
 st.markdown("<h3>Search for Product Reviews</h3>", unsafe_allow_html=True)
 
 # Simple elegant search input
-query = st.text_input("Enter your search query:", "Harry Potter", 
+query = st.text_input("Enter your search query:", "Crock Pot", 
                       help="Try searching for product features, specific use cases, or quality descriptors")
 
 search_col1, search_col2 = st.columns([1, 6])
