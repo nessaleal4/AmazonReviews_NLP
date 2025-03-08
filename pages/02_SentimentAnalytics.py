@@ -3,12 +3,12 @@ import pandas as pd
 import plotly.express as px
 from qdrant_client import QdrantClient
 
-# Set the page configuration (optional on sub-pages)
+# Set page configuration
 st.set_page_config(page_title="Sentiment Analytics", layout="wide")
 
 st.title("Sentiment Analytics by Category")
 st.markdown("""
-This dashboard displays sentiment distribution across review categories based on data stored in Qdrant.
+This dashboard displays the sentiment distribution across review categories based on data stored in Qdrant Cloud.
 """)
 
 # Load Qdrant secrets from Streamlit
@@ -24,19 +24,19 @@ q_client = get_qdrant_client()
 @st.cache_data
 def load_data_from_qdrant(sample_limit: int = 1000) -> pd.DataFrame:
     """
-    Fetches a sample of points from the Qdrant collection and returns a DataFrame
+    Fetches a sample of points from the Qdrant Cloud collection and returns a DataFrame
     containing 'category' and 'sentiment' from the payload.
     """
     scroll_response = q_client.scroll(
         collection_name="amazon_reviews",
         limit=sample_limit
     )
-    # Handle case where there is no result (i.e. result is None)
-    if scroll_response.result is not None:
-        points = scroll_response.result.points
-    else:
-        points = []
-        
+    # Try to get the result either as an attribute or from the dictionary directly
+    result = getattr(scroll_response, "result", None)
+    if result is None and isinstance(scroll_response, dict):
+        result = scroll_response.get("result", None)
+    points = result.points if result and hasattr(result, "points") else []
+    
     data = []
     for point in points:
         payload = point.payload
@@ -46,6 +46,7 @@ def load_data_from_qdrant(sample_limit: int = 1000) -> pd.DataFrame:
         })
     return pd.DataFrame(data)
 
+# Load sample data from Qdrant
 df = load_data_from_qdrant(1000)
 
 if df.empty:
@@ -68,4 +69,4 @@ else:
     st.plotly_chart(fig, use_container_width=True)
     
     st.markdown("### Detailed Data")
-    st.dataframe(df_grouped)
+    st.dataframe(df_grouped, use_container_width=True)
