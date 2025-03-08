@@ -1,9 +1,5 @@
-streamlit==1.25.0
-qdrant-client==0.10.0
-sentence-transformers==2.2.2
+streamlit
+qdrant-client
+sentence-transformers
 spacy>=3.0.0
 en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.5.0/en_core_web_sm-3.5.0.tar.gz
-markdown-it-py==3.0.0
-mdurl==0.1.2
-pygments==2.19.1
-rich==13.9.4
