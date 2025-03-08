@@ -12,7 +12,7 @@ The application:
 - Provides a polished, user-friendly interface built with Streamlit
 - Visualizes sentiment distribution with professional Plotly charts
 
-https://amazonreviewsnlp.streamlit.app/
+UI Access: https://amazonreviewsnlp.streamlit.app/
 
 ## Project Structure
 
