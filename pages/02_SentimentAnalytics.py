@@ -1,53 +1,50 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 import requests
 from io import BytesIO
+import plotly.express as px
+from bs4 import BeautifulSoup
 
-# Set the page configuration
 st.set_page_config(page_title="Sentiment Analytics", layout="wide")
 
 st.title("Sentiment Analytics by Category")
 st.markdown("""
-This dashboard displays sentiment distribution across review categories based on preprocessed CSV data stored on Google Drive.
+This dashboard displays sentiment distribution across review categories based on CSV data stored on Google Drive.
+HTML tags in the review text are stripped for cleaner display.
 """)
 
-# Dictionary of categories to Google Drive File IDs
 DRIVE_FILE_IDS = {
-    "Beauty_and_Personal_Care": "1ZhGvPq2xvjljm530XOHxYlKN1Ssv8mkA",
-    "Books": "1F-ypoWmen8wlJb8SZ9cO9quHSqY6Ji8J",
-    "Electronics": "1i2qYCcWixYe-zFUyC73O9hOAA9Hwr2-z",
-    "Home_and_Kitchen": "1A4pHlEbKL1PDrqMoSf2_aZb2a48H_t8w"
+    "Beauty_and_Personal_Care": "YOUR_FILE_ID",
+    "Books": "YOUR_FILE_ID",
+    "Electronics": "YOUR_FILE_ID",
+    "Home_and_Kitchen": "YOUR_FILE_ID"
 }
+
+def strip_html(raw_html: str) -> str:
+    if not isinstance(raw_html, str):
+        return str(raw_html)
+    soup = BeautifulSoup(raw_html, "html.parser")
+    return soup.get_text(separator=" ")
 
 @st.cache_data
 def load_csv_from_drive(file_id: str) -> pd.DataFrame:
-    """
-    Downloads a CSV file from Google Drive using its file ID and returns a DataFrame.
-    Uses the Python engine with on_bad_lines="skip" to handle tokenizing errors.
-    """
     download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
     response = requests.get(download_url)
     response.raise_for_status()
-    # Use the Python engine and skip bad lines
     df = pd.read_csv(BytesIO(response.content), engine="python", on_bad_lines="skip")
-    # Normalize column names to lower-case and strip whitespace
+    # Lowercase & strip columns
     df.columns = df.columns.str.lower().str.strip()
+    # Strip HTML from text column if present
+    if "text" in df.columns:
+        df["text"] = df["text"].apply(strip_html)
     return df
 
 @st.cache_data
 def load_all_categories() -> pd.DataFrame:
-    """
-    Loads CSV files for all categories from Google Drive,
-    ensures a 'category' column exists, and concatenates them into one DataFrame.
-    """
     all_dfs = []
     for category, file_id in DRIVE_FILE_IDS.items():
         try:
             df = load_csv_from_drive(file_id)
-            # Debug: show column names (you can remove this later)
-            st.write(f"Columns for {category}:", df.columns.tolist())
-            # Ensure there's a 'category' column (if not, add it)
             if "category" not in df.columns:
                 df["category"] = category
             all_dfs.append(df)
@@ -58,20 +55,19 @@ def load_all_categories() -> pd.DataFrame:
     else:
         return pd.DataFrame()
 
-# Load all category data from Drive
 df_all = load_all_categories()
 
 if df_all.empty:
     st.warning("No data available. Please ensure your Google Drive links are correct.")
 else:
-    # Check if sentiment column exists (in lower-case)
+    # Check if 'sentiment' column is present
     if "sentiment" not in df_all.columns:
         st.error("The data does not include a 'sentiment' column.")
     else:
         # Group data by category and sentiment
         df_grouped = df_all.groupby(["category", "sentiment"]).size().reset_index(name="count")
-        
-        # Create a grouped bar chart using Plotly Express
+
+        # Plot
         fig = px.bar(
             df_grouped,
             x="category",
@@ -81,8 +77,9 @@ else:
             title="Sentiment Distribution by Category",
             labels={"category": "Category", "count": "Number of Reviews"}
         )
-        fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
         st.plotly_chart(fig, use_container_width=True)
-        
-        st.markdown("### Detailed Data (Sample)")
-        st.dataframe(df_grouped, use_container_width=True)
+
+        st.markdown("### Sample Data")
+        # Optionally hide "text" column if it's huge
+        columns_to_show = [col for col in df_all.columns if col not in ["text", "embedding"]]
+        st.dataframe(df_all[columns_to_show].head(50))
