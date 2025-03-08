@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 import requests
 from io import BytesIO
-import plotly.express as px
 
 # Set the page configuration
 st.set_page_config(page_title="Sentiment Analytics", layout="wide")
@@ -31,19 +31,23 @@ def load_csv_from_drive(file_id: str) -> pd.DataFrame:
     response.raise_for_status()
     # Use the Python engine and skip bad lines
     df = pd.read_csv(BytesIO(response.content), engine="python", on_bad_lines="skip")
+    # Normalize column names to lower-case and strip whitespace
+    df.columns = df.columns.str.lower().str.strip()
     return df
 
 @st.cache_data
 def load_all_categories() -> pd.DataFrame:
     """
     Loads CSV files for all categories from Google Drive,
-    adds a 'category' column if missing, and concatenates them into one DataFrame.
+    ensures a 'category' column exists, and concatenates them into one DataFrame.
     """
     all_dfs = []
     for category, file_id in DRIVE_FILE_IDS.items():
         try:
             df = load_csv_from_drive(file_id)
-            # Ensure there's a category column
+            # Debug: show column names (you can remove this later)
+            st.write(f"Columns for {category}:", df.columns.tolist())
+            # Ensure there's a 'category' column (if not, add it)
             if "category" not in df.columns:
                 df["category"] = category
             all_dfs.append(df)
@@ -60,22 +64,22 @@ df_all = load_all_categories()
 if df_all.empty:
     st.warning("No data available. Please ensure your Google Drive links are correct.")
 else:
-    st.markdown("### Overall Sentiment Distribution")
+    # Check if sentiment column exists (in lower-case)
     if "sentiment" not in df_all.columns:
         st.error("The data does not include a 'sentiment' column.")
     else:
-        # Group by category and sentiment
-        df_grouped = df_all.groupby(["category", "sentiment"]).size().reset_index(name="Count")
+        # Group data by category and sentiment
+        df_grouped = df_all.groupby(["category", "sentiment"]).size().reset_index(name="count")
         
-        # Create a grouped bar chart with Plotly Express
+        # Create a grouped bar chart using Plotly Express
         fig = px.bar(
             df_grouped,
             x="category",
-            y="Count",
+            y="count",
             color="sentiment",
             barmode="group",
             title="Sentiment Distribution by Category",
-            labels={"category": "Category", "Count": "Number of Reviews"}
+            labels={"category": "Category", "count": "Number of Reviews"}
         )
         fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
         st.plotly_chart(fig, use_container_width=True)
