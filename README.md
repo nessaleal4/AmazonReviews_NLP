@@ -16,6 +16,8 @@ UI Access: https://amazonreviewsnlp.streamlit.app/
 
 ## Project Structure
 
+local pre-processing
+Mpnet+distilbert_Pre_processing.ipynb
 ```
 AmazonReviews_NLP/
 ├── .devcontainer/
@@ -23,6 +25,8 @@ AmazonReviews_NLP/
 ├── pages/
 │   └── 02_SentimentAnalytics.py  # Analytics dashboard for sentiment analysis by category
 ├── app.py                    # Main application file for the product search interface
+├── local pre-processing/
+│   └── Mpnet+distilbert_Pre_processing.ipynb     # Data preprocessing and vectorization for storage in Qdrant Cloud
 ├── requirements.txt          # Python dependencies
 └── README.md                 # Project documentation
 ```
